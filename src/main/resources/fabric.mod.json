@@ -1,0 +1,24 @@
+{
+	"schemaVersion": 1,
+	"id": "afkmod",
+	"version": "${version}",
+	"name": "AFK Mod",
+	"description": "Client-side AFK mining helper: keeps crouch, left click and right click active, pauses during server restarts, with an optional timer. Controlled through a GUI and keybinds.",
+	"authors": [],
+	"license": "All-Rights-Reserved",
+	"environment": "client",
+	"mixins": [
+		"afkmod.mixins.json"
+	],
+	"entrypoints": {
+		"client": [
+			"dev.afkmod.AfkModClient"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~26.1.2",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}

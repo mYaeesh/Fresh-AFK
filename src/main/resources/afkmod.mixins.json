@@ -1,0 +1,14 @@
+{
+	"required": true,
+	"package": "dev.afkmod.mixin",
+	"compatibilityLevel": "JAVA_25",
+	"client": [
+		"ClientLevelMixin",
+		"ClientPacketListenerMixin",
+		"GuiAccessor",
+		"MouseHandlerMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}
