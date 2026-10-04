@@ -809,3 +809,39 @@ Read the whole code base against SPEC.md. Nothing was run in-game (no display), 
 5. Pause-menu Disconnect: OFF and stays OFF. Briefly drop the Wi-Fi: RECONNECTING, resumes after a rejoin within 120 s.
 6. Watch the first recovery that fires (edge check against your farm layout) and keep `recoveryEdgeCheck` on.
 7. Copy the debug report if anything looked off.
+
+---
+
+## Session 2026-10-05: key order and Hold -> Toggle (0.2.0)
+
+Renamed to **Fresh AFK** (display name only; mod id, package and config files keep `afkmod`), MIT license, published at
+https://github.com/mYaeesh/Fresh-AFK with a GitHub Actions build.
+
+### Right click last, only with shift held
+- New `logic/ActivationOrder` (pure Java, `ActivationOrderTest`): crouch and left click are pressed first; right click
+  last and only when crouch is on **and confirmed** (`LocalPlayer.isShiftKeyDown()`, or the crouch key down for 2+
+  ticks so it can't stall, e.g. in a vehicle). If right click is on while crouch is fully off, right click is released,
+  crouch pressed, and right click pressed again once crouch is confirmed.
+- While right click waits, `runCheck` requests the next check on the next tick (same trick as after a resume), so the
+  delay is about one tick and each check still sends at most one press per key (Test Lab C1 stays valid).
+- Releases already go right click before crouch (`onTransition`, `MovementRecovery.releaseKeys`).
+
+### Hold -> Toggle while the mod is on
+- New `logic/HoldModeOverride` (pure Java, `HoldModeOverrideTest`). Leaving OFF switches every control on "Hold"
+  (`options.toggleCrouch/toggleAttack/toggleUse`) to "Toggle"; entering OFF releases the keys first (still as toggle
+  keys) and then puts exactly those back to "Hold" and calls `options.save()`. Controls already on Toggle are untouched.
+  `ToggleKeyMapping` reads the option live (`needsToggle` supplier), so the switch takes effect at once.
+- The switched controls are written to `config/afkmod-holdmodes.txt` (one name per line) and deleted on restore.
+  `CLIENT_STARTED` restores leftovers after a crash; `CLIENT_STOPPING` restores on a normal quit.
+- Verified with `javap` on the 26.1.2 jar: `OptionInstance.set`, `Options.save`, `Options.toggleCrouch/Attack/Use`,
+  `LocalPlayer.isShiftKeyDown`.
+
+### In-game checklist
+1. Controls: set Sneak, Attack and Use to **Hold**. Press K: all three show **Toggle** in Controls while ON; HUD C L R
+   green, with R turning green just after C.
+2. Press K again: all three are back to **Hold**, nothing stuck; `options.txt` says `toggleCrouch:false` etc.
+3. Mixed (Sneak Toggle, Use Hold): only Use is switched and restored.
+4. Mod ON, then kill the game from the task manager: `config/afkmod-holdmodes.txt` exists; start the game: back to Hold,
+   file gone.
+5. With the mod ON, open chat, press shift once in-world after closing (crouch off): right click turns off, crouch back
+   on, then right click on again.

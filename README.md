@@ -23,10 +23,10 @@ $env:JAVA_HOME = "C:\Program Files\Java\jdk-25.0.2"; .\gradlew.bat build
 `build` compiles the mod and runs the JUnit tests. Output jar:
 
 ```
-build/libs/afkmod-0.1.0.jar
+build/libs/afkmod-0.2.0.jar
 ```
 
-(`afkmod-0.1.0-sources.jar` next to it is only the sources; do not install that one.)
+(`afkmod-0.2.0-sources.jar` next to it is only the sources; do not install that one.)
 
 To try it without installing: `./gradlew runClient` starts a dev client with the mod loaded.
 
@@ -37,7 +37,7 @@ To try it without installing: `./gradlew runClient` starts a dev client with the
    (https://fabricmc.net/use/installer/) and pick the Fabric profile in the launcher. (The mod is built and
    unit-tested against Loader 0.19.5; 0.19.3 and 0.19.4 are allowed by `fabric.mod.json` but have not been tried.)
 3. Download **Fabric API 0.155.3+26.1.2** (or the newest build for 26.1.2) and put it in your `mods` folder.
-4. Put `build/libs/afkmod-0.1.0.jar` in the same `mods` folder.
+4. Put `build/libs/afkmod-0.2.0.jar` in the same `mods` folder.
 5. Start the game with the Fabric profile. Mod ID `afkmod`, name "Fresh AFK".
 
 Mod Menu and Cloth Config are **not** required.
@@ -65,6 +65,14 @@ While **ON** and running, every check (every 20 ticks, about 1 second) the mod m
 right click are all active. It works with both **Toggle** and **Hold** modes for those keys (Options > Controls). It
 presses a key at most once per check, so a toggle key is never flipped back off.
 
+- **Order:** crouch and left click go on first. Right click always goes on **last**, and only once you are really
+  sneaking (shift is down), usually one tick later. If right click is ever on while crouch is off, the mod releases
+  right click, turns crouch back on, then presses right click again.
+- **Hold becomes Toggle while the mod is on:** if crouch, left click or right click is set to **Hold** in
+  Options > Controls, the mod switches it to **Toggle** when you turn the mod on and puts it back to **Hold** when the
+  mod turns off (any reason: keybind, timer, death, disconnect, quitting the game). Keys already on Toggle are left
+  alone. Which ones it switched is kept in `config/afkmod-holdmodes.txt`, so if the game crashes while the mod is on,
+  they are put back to Hold the next time the game starts.
 - It does nothing while any screen is open (the GUI, chat, inventory). It re-checks on the next check after the screen
   closes.
 - It turns itself **OFF at once** if you die, if you disconnect yourself (pause menu, "Save and Quit"), or when the

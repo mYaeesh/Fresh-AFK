@@ -69,6 +69,15 @@ This turns off "pause when the window loses focus".
 
 Whenever it turns off, it lets go of every key it was holding, so nothing is left stuck down.
 
+### Order of the keys, and "Hold" settings
+
+- It always crouches first, then starts mining (left click), and only **after** you are crouching does it start
+  right click. Right click is never used without shift held.
+- If you set crouch, left click or right click to **Hold** in Options → Controls, the mod changes it to **Toggle**
+  while it is on (that is how it keeps them pressed for you). When the mod turns off, it changes them back to
+  **Hold**, exactly as you had them. If the game crashes while the mod is on, it fixes them the next time you start
+  the game.
+
 ---
 
 ## 4. Reading the status line (the "HUD")

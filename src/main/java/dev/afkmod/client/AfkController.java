@@ -5,11 +5,13 @@ import dev.afkmod.AfkModClient;
 import dev.afkmod.client.KeyControl.Action;
 import dev.afkmod.client.gui.AfkMenuScreen;
 import dev.afkmod.config.AfkConfig;
+import dev.afkmod.logic.ActivationOrder;
 import dev.afkmod.logic.AfkStateMachine;
 import dev.afkmod.logic.AfkStateMachine.DisconnectCause;
 import dev.afkmod.logic.AfkStateMachine.Reason;
 import dev.afkmod.logic.AfkStateMachine.State;
 import dev.afkmod.logic.DisconnectTracker;
+import dev.afkmod.logic.HoldModeOverride;
 import dev.afkmod.logic.KeywordMatcher;
 import dev.afkmod.logic.MessageSource;
 import dev.afkmod.mixin.GuiAccessor;
@@ -65,6 +67,9 @@ public final class AfkController {
 	private final StatsRecorder statsRecorder = new StatsRecorder(stats);
 	/** Stuck detection and recovery. Its final "log out" defaults to the server-list disconnect after the tick. */
 	private final MovementRecovery recovery = new MovementRecovery(machine, messageLog, stats, () -> recoveryDisconnectPending = true);
+	/** Crouch, left and right click set to "Hold" are switched to "Toggle" while the mod is on, then put back. */
+	private final HoldModeOverride holdModes =
+			new HoldModeOverride(FabricLoader.getInstance().getConfigDir().resolve("afkmod-holdmodes.txt"));
 	private final GameTestEnvironment testEnvironment = new GameTestEnvironment(this);
 	private final TestLab testLab = new TestLab(testEnvironment, System::nanoTime, System::currentTimeMillis,
 			AfkModClient.overrides(), Scenarios.all());
@@ -74,6 +79,8 @@ public final class AfkController {
 	private KeyMapping testLabKey;
 	private KeyMapping abortTestKey;
 	private int ticksSinceCheck;
+	/** Ticks the crouch key has been down in a row: right click may also go on after 2, even without the sneak input. */
+	private int crouchHeldTicks;
 	private long checkCount;
 	private boolean timerDisconnectPending;
 	private boolean recoveryDisconnectPending;
@@ -150,8 +157,21 @@ public final class AfkController {
 		ClientPlayerBlockBreakEvents.AFTER.register((level, player, pos, state) -> {
 			if (machine.isActiveOrRecovering() && !testMode) stats.blockMined();
 		});
+		// A crash or quit while the mod was on left controls on "Toggle": put them back to "Hold".
+		ClientLifecycleEvents.CLIENT_STARTED.register(mc -> {
+			try {
+				List<String> restored = holdModes.restoreLeftovers(toggleModes(mc));
+				if (!restored.isEmpty()) {
+					mc.options.save();
+					AfkModClient.LOGGER.info("Put {} back to Hold (left over from the last session)", restored);
+				}
+			} catch (RuntimeException e) {
+				AfkModClient.LOGGER.warn("Can't restore the Hold settings left over from the last session", e);
+			}
+		});
 		ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> {
 			if (testLab.isRunning()) testLab.abort();
+			restoreHoldModes(mc);
 			stats.shutdown();
 		});
 
@@ -324,6 +344,7 @@ public final class AfkController {
 			if (testLab.isRunning()) testLab.abort();
 		}
 
+		crouchHeldTicks = mc.options.keyShift.isDown() ? Math.min(crouchHeldTicks + 1, 1000) : 0;
 		AfkConfig config = AfkModClient.config();
 		// The recovery sequence needs per-tick precision: the one exception to the 20-tick rule.
 		if (machine.state() == State.RECOVERING) recovery.onTick(mc, config);
@@ -369,9 +390,16 @@ public final class AfkController {
 
 		switch (machine.state()) {
 			case ACTIVE -> {
-				press(mc, Action.CROUCH);
-				press(mc, Action.ATTACK);
-				press(mc, Action.USE);
+				// Crouch and left click first, right click last and only once the player is really sneaking.
+				ActivationOrder.Plan plan = ActivationOrder.plan(KeyControl.isActive(mc, Action.CROUCH),
+						KeyControl.isCrouchConfirmed(mc) || crouchHeldTicks >= 2,
+						KeyControl.isActive(mc, Action.ATTACK), KeyControl.isActive(mc, Action.USE));
+				if (plan.releaseUse()) release(mc, Action.USE);
+				if (plan.pressCrouch()) press(mc, Action.CROUCH);
+				if (plan.pressAttack()) press(mc, Action.ATTACK);
+				if (plan.pressUse()) press(mc, Action.USE);
+				// Right click is still waiting for crouch: check again on the next tick, not a full interval later.
+				if (plan.followUp()) ticksSinceCheck = Integer.MAX_VALUE - 1;
 			}
 			case RESTARTING, SETTLING, RECONNECTING -> {
 				// Keep them released (closing a screen can restore toggled keys by itself).
@@ -418,10 +446,13 @@ public final class AfkController {
 		statsRecorder.onTransition(from, to, reason);
 		testLab.onTransition(from, to, reason);
 
+		if (from == State.OFF) applyToggleModes(mc);
 		if (to == State.OFF) {
 			release(mc, Action.ATTACK);
 			release(mc, Action.USE);
 			release(mc, Action.CROUCH);
+			// After the releases, which still press like toggle keys.
+			restoreHoldModes(mc);
 		} else if (to != State.ACTIVE && to != State.RECOVERING) {
 			// RESTARTING, SETTLING or RECONNECTING (the recovery releases its own keys, ACTIVE presses them).
 			release(mc, Action.ATTACK);
@@ -454,6 +485,54 @@ public final class AfkController {
 						b -> Minecraft.getInstance().setScreen(new AfkMenuScreen(screen)))
 				.bounds(lowest.getX(), lowest.getY() + lowest.getHeight() + 4, lowest.getWidth(), 20).build();
 		widgets.add(button);
+	}
+
+	// ---- Hold -> Toggle while the mod is on ----
+
+	private static final List<String> CONTROLS = List.of(Action.CROUCH.name(), Action.ATTACK.name(), Action.USE.name());
+
+	private void applyToggleModes(Minecraft mc) {
+		try {
+			List<String> switched = holdModes.apply(toggleModes(mc), CONTROLS);
+			if (!switched.isEmpty()) messageLog.event("Switched " + switched + " from Hold to Toggle while the mod is on");
+		} catch (RuntimeException e) {
+			AfkModClient.LOGGER.warn("Can't remember the Hold settings switched to Toggle", e);
+		}
+	}
+
+	private void restoreHoldModes(Minecraft mc) {
+		try {
+			List<String> restored = holdModes.restore(toggleModes(mc));
+			if (restored.isEmpty()) return;
+			mc.options.save();
+			messageLog.event("Put " + restored + " back to Hold");
+		} catch (RuntimeException e) {
+			AfkModClient.LOGGER.warn("Can't put the Hold settings back", e);
+		}
+	}
+
+	/** The player's toggle/hold settings for crouch, attack and use, by {@link Action} name (unknown names are ignored). */
+	private static HoldModeOverride.Modes toggleModes(Minecraft mc) {
+		return new HoldModeOverride.Modes() {
+			@Override
+			public boolean isToggle(String control) {
+				Action action = action(control);
+				return action == null || KeyControl.isToggleMode(mc.options, action);
+			}
+
+			@Override
+			public void setToggle(String control, boolean toggle) {
+				Action action = action(control);
+				if (action != null) KeyControl.setToggleMode(mc.options, action, toggle);
+			}
+		};
+	}
+
+	private static Action action(String name) {
+		for (Action action : Action.values()) {
+			if (action.name().equals(name)) return action;
+		}
+		return null;
 	}
 
 	private static void press(Minecraft mc, Action action) {

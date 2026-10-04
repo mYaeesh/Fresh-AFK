@@ -50,6 +50,21 @@ public final class KeyControl {
 		};
 	}
 
+	/** Sets the player's setting for the key: true = "Toggle", false = "Hold". Takes effect at once (not saved). */
+	public static void setToggleMode(Options options, Action action, boolean toggle) {
+		switch (action) {
+			case CROUCH -> options.toggleCrouch().set(toggle);
+			case ATTACK -> options.toggleAttack().set(toggle);
+			case USE -> options.toggleUse().set(toggle);
+		}
+	}
+
+	/** True if the player is really sneaking (the sneak input, which follows the crouch key one tick later). */
+	public static boolean isCrouchConfirmed(Minecraft mc) {
+		LocalPlayer player = mc.player;
+		return player != null && player.isShiftKeyDown();
+	}
+
 	/**
 	 * The real current state. Crouch also counts the player's actual sneak input, which follows the key one
 	 * tick later; attack and use are the key mapping's state (which is the toggled state in toggle mode).
