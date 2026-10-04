@@ -42,3 +42,6 @@ replay_*.log
 # local game runs
 logs/
 mods/
+
+# claude code
+.claude/

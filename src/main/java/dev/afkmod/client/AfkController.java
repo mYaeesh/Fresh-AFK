@@ -441,7 +441,7 @@ public final class AfkController {
 
 	// ---- pause menu button ----
 
-	/** Adds an "AFK Mod" button under the last button of the pause menu. */
+	/** Adds an "Fresh AFK" button under the last button of the pause menu. */
 	private static void addPauseMenuButton(Screen screen) {
 		if (!(screen instanceof PauseScreen pause) || !pause.showsPauseMenu()) return;
 		List<AbstractWidget> widgets = Screens.getWidgets(screen);
@@ -450,7 +450,7 @@ public final class AfkController {
 			if (widget instanceof Button && (lowest == null || widget.getY() > lowest.getY())) lowest = widget;
 		}
 		if (lowest == null) return;
-		Button button = Button.builder(Component.literal("AFK Mod"),
+		Button button = Button.builder(Component.literal("Fresh AFK"),
 						b -> Minecraft.getInstance().setScreen(new AfkMenuScreen(screen)))
 				.bounds(lowest.getX(), lowest.getY() + lowest.getHeight() + 4, lowest.getWidth(), 20).build();
 		widgets.add(button);

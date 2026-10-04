@@ -1,6 +1,6 @@
-# AFK Mod: Plain-Language Guide
+# Fresh AFK: Plain-Language Guide
 
-This guide explains what the AFK Mod does and how to use it, without technical language.
+This guide explains what the Fresh AFK does and how to use it, without technical language.
 (The `README.md` file has the same information written for programmers.)
 
 ---
@@ -33,10 +33,10 @@ It only runs on your own computer. Nothing is installed on the server.
 | **K** | Turns the mod **on** or **off**. |
 | **J** | Opens the mod's settings menu. |
 
-You can also open the settings menu by pressing **Esc** and clicking the **AFK Mod** button (just under
+You can also open the settings menu by pressing **Esc** and clicking the **Fresh AFK** button (just under
 "Disconnect").
 
-To change these keys: **Options → Controls → Key Binds**, then look for the **AFK Mod** section.
+To change these keys: **Options → Controls → Key Binds**, then look for the **Fresh AFK** section.
 There are two more keys there that have no key set by default: **Open Test Lab** and **Abort test**
 (see section 9).
 

@@ -2,10 +2,17 @@
 	"schemaVersion": 1,
 	"id": "afkmod",
 	"version": "${version}",
-	"name": "AFK Mod",
+	"name": "Fresh AFK",
 	"description": "Client-side AFK mining helper: keeps crouch, left click and right click active, pauses during server restarts, with an optional timer. Controlled through a GUI and keybinds.",
-	"authors": [],
-	"license": "All-Rights-Reserved",
+	"authors": [
+		"Mohamed Yaeesh Nasih"
+	],
+	"contact": {
+		"homepage": "https://github.com/mYaeesh/Fresh-AFK",
+		"sources": "https://github.com/mYaeesh/Fresh-AFK",
+		"issues": "https://github.com/mYaeesh/Fresh-AFK/issues"
+	},
+	"license": "MIT",
 	"environment": "client",
 	"mixins": [
 		"afkmod.mixins.json"

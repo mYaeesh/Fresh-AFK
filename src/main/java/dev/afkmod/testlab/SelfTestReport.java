@@ -23,7 +23,7 @@ public final class SelfTestReport {
 	 */
 	public static String format(List<TestResult> results, long startedEpochMs, double seconds, int planned, String note) {
 		StringBuilder sb = new StringBuilder();
-		sb.append("AFK Mod self-test\n");
+		sb.append("Fresh AFK self-test\n");
 		sb.append("Started: ").append(DebugReport.time(startedEpochMs, ZoneId.systemDefault())).append('\n');
 		sb.append(String.format(Locale.ROOT, "Duration: %.1f s%n", seconds));
 		sb.append("Ran: ").append(results.size()).append(" of ").append(planned).append(" scenarios\n");

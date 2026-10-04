@@ -42,12 +42,12 @@ public final class DebugReport {
 	public static String build(Input in) {
 		Objects.requireNonNull(in);
 		StringBuilder sb = new StringBuilder();
-		sb.append("AFK Mod debug report\n");
+		sb.append("Fresh AFK debug report\n");
 		sb.append("Generated: ").append(time(in.generatedAtMs(), in.zone())).append('\n');
 		sb.append("Identity redacted: ").append(in.redact() ? "yes" : "no").append("\n\n");
 
 		section(sb, "Versions");
-		sb.append("AFK Mod: ").append(in.modVersion()).append('\n');
+		sb.append("Fresh AFK: ").append(in.modVersion()).append('\n');
 		sb.append("Minecraft: ").append(in.minecraftVersion()).append('\n');
 		sb.append("Fabric Loader: ").append(in.loaderVersion()).append('\n');
 		sb.append("Fabric API: ").append(in.fabricApiVersion()).append('\n');

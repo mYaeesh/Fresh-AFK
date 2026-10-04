@@ -1,4 +1,4 @@
-# AFK Mod
+# Fresh AFK
 
 A **client-side** Fabric mod for **Minecraft Java 26.1.2** that keeps you crouching, mining (left click) and using
 (right click) while you are AFK on a server where staff have approved AFK mining. It survives server restarts, can
@@ -38,7 +38,7 @@ To try it without installing: `./gradlew runClient` starts a dev client with the
    unit-tested against Loader 0.19.5; 0.19.3 and 0.19.4 are allowed by `fabric.mod.json` but have not been tried.)
 3. Download **Fabric API 0.155.3+26.1.2** (or the newest build for 26.1.2) and put it in your `mods` folder.
 4. Put `build/libs/afkmod-0.1.0.jar` in the same `mods` folder.
-5. Start the game with the Fabric profile. Mod ID `afkmod`, name "AFK Mod".
+5. Start the game with the Fabric profile. Mod ID `afkmod`, name "Fresh AFK".
 
 Mod Menu and Cloth Config are **not** required.
 
@@ -48,7 +48,7 @@ incoming messages** on), `afkmod-report.txt` (the debug report) and `afkmod-self
 
 ## Keybinds
 
-They are in **Options > Controls > Key Binds** under the **AFK Mod** category and can be rebound.
+They are in **Options > Controls > Key Binds** under the **Fresh AFK** category and can be rebound.
 
 | Action | Default | What it does |
 |---|---|---|
@@ -57,7 +57,7 @@ They are in **Options > Controls > Key Binds** under the **AFK Mod** category an
 | Open Test Lab | unbound | Opens the same screen on its **Test Lab** tab. |
 | Abort test | unbound | Cancels a running Test Lab scenario. |
 
-The settings screen can also be opened from the **AFK Mod** button on the pause menu (Esc), right under Disconnect.
+The settings screen can also be opened from the **Fresh AFK** button on the pause menu (Esc), right under Disconnect.
 
 ## What it does
 
@@ -172,7 +172,7 @@ It moves to the bottom corner while the F3 debug screen is open. It is hidden by
 
 ## GUI guide
 
-Open it with `J` or the pause menu's **AFK Mod** button. It is a centred panel (about 60% of the window width, at most
+Open it with `J` or the pause menu's **Fresh AFK** button. It is a centred panel (about 60% of the window width, at most
 420 px, following the GUI scale) under vanilla's own tab bar (the same widgets as the Create World screen), with
 **Save**, **Done** and **Cancel** at the bottom. Hover a tab for its full name. The mouse wheel and Page Up / Page Down
 scroll a tab when the window is too small to show every row.
@@ -346,3 +346,7 @@ replaced the clear timeout): `restartEndKeywords` (`[]`) and `restartClearTimeou
   "pause on lost focus" is off (F3+P). While a screen is open the mod deliberately does nothing.
 - The bottom-left HUD corner can overlap the chat. Use a top corner if it bothers you.
 - If the server never comes back after a restart, the mod turns itself off after `maxRestartWaitMinutes` (15).
+
+## License
+
+MIT. See [`LICENSE`](LICENSE).

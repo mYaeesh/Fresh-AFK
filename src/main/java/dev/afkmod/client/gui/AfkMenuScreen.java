@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * The AFK Mod settings screen: a centred panel (about 60% of the width, at most 420 px) under vanilla's tab bar
+ * The Fresh AFK settings screen: a centred panel (about 60% of the width, at most 420 px) under vanilla's tab bar
  * ({@link TabNavigationBar} and {@link TabManager}, the same widgets as the Create World screen), with Save, Done and
  * Cancel at the bottom. Every control writes straight into the live config, so changes apply immediately. Save writes
  * {@code config/afkmod.json}; Done saves and closes; Cancel (or Esc) puts back what was saved when the screen opened or
@@ -65,7 +65,7 @@ public final class AfkMenuScreen extends Screen {
 
 	/** Opens on the given tab (e.g. {@link #TAB_TEST_LAB} for the standalone Test Lab keybind). */
 	public AfkMenuScreen(@Nullable Screen parent, int tab) {
-		super(Component.literal("AFK Mod"));
+		super(Component.literal("Fresh AFK"));
 		this.parent = parent;
 		this.snapshot = AfkConfig.fromJson(AfkModClient.savedConfig().toJson());
 		selectedTab = tab;
