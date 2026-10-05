@@ -51,7 +51,7 @@ final class DebugTab extends RowTab {
 				.bounds(0, 0, 100, Ui.ROW_H).build();
 		Button importButton = Button.builder(Component.literal("Import settings"), b -> importSettings())
 				.tooltip(Tooltip.create(Component.literal("Replaces all settings with the ones in " + EXPORT_FILE
-						+ ". Values out of range are corrected. Cancel does not undo it.")))
+						+ ". Values out of range are corrected. Cancel undoes it, except the timer length.")))
 				.bounds(0, 0, 100, Ui.ROW_H).build();
 		rows.add(ButtonsRow.of(List.of(export, importButton)));
 		rows.add(new TextRow(DebugTab::reportStatus));
@@ -95,6 +95,8 @@ final class DebugTab extends RowTab {
 			// The timer length is part of the settings: put the countdown back to the imported length.
 			AfkController.get().machine().setTimerSeconds(imported.timerSeconds);
 			TestLabActions.setStatus("Settings imported from " + EXPORT_FILE, Ui.GREEN);
+			// The Timer tab keeps what was typed in static fields: refill them from the imported timer.
+			TimerTab.resetTyped();
 			rebuild.run();
 		} catch (IOException | com.google.gson.JsonParseException e) {
 			AfkModClient.LOGGER.error("Could not import the settings from {}", file, e);

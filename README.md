@@ -221,7 +221,7 @@ the scenario's description and what a PASS means.
 | **Recovery** | Stuck detection and the recovery walk settings, plus the last yaw turn and the last recovery result. |
 | **Stats** | The current session, lifetime totals, the last 20 sessions (hover one for details) and **Reset lifetime stats** (asks first). |
 | **Display** | A live **HUD preview** (drawn by the same code as the real HUD), a legend of the state colours (green mining, yellow recovering, red restarting, orange reconnecting, aqua resuming, grey off), then HUD on/off, detailed mode, corner and scale. |
-| **Debug** | **Log all incoming messages**, **Open log folder**, **Copy debug report**, and **Export settings** / **Import settings** (to and from `config/afkmod-export.json`; an import replaces every setting, out-of-range values are corrected, and Cancel does not undo it). |
+| **Debug** | **Log all incoming messages**, **Open log folder**, **Copy debug report**, and **Export settings** / **Import settings** (to and from `config/afkmod-export.json`; an import replaces every setting, out-of-range values are corrected, and Cancel undoes it except for the timer length). |
 | **Test Lab** | The message tester with presets, the options, every scenario grouped A to I with a **Run** button (disabled, with the reason in a tooltip, when the mod is OFF and the scenario needs it ON), the self-test, Abort and the results list. Scenarios that move the player carry a `(!)` tag; those that can disconnect ask for confirmation. |
 
 Validation: numbers must be inside their range and the restart and queue keyword lists cannot be empty. A bad value
