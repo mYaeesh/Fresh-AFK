@@ -601,21 +601,56 @@ class AfkStateMachineTest {
 	}
 
 	@Test
-	void timerStartsFreshEachTimeModIsTurnedOn() {
+	void timerPausesWhenTurnedOffAndResumesWhenTurnedOn() {
 		config.timerSeconds = 100;
 		sm.turnOn();
 		clock.advanceSeconds(70);
 		sm.turnOff();
+		assertTrue(sm.isTimerPaused());
+		clock.advanceSeconds(1000);
+		assertEquals(30, sm.timerRemainingSeconds());
+		sm.turnOn();
+		assertFalse(sm.isTimerPaused());
+		assertEquals(30, sm.timerRemainingSeconds());
+		clock.advanceSeconds(10);
+		assertEquals(20, sm.timerRemainingSeconds());
+	}
+
+	@Test
+	void timerStartsFreshAfterItEnds() {
+		config.timerSeconds = 100;
+		sm.turnOn();
+		clock.advanceSeconds(100);
+		check();
+		assertEquals(State.OFF, sm.state());
 		assertFalse(sm.hasTimer());
 		sm.turnOn();
 		assertEquals(100, sm.timerRemainingSeconds());
 	}
 
 	@Test
-	void settingTimerWhileOffOnlyStoresIt() {
+	void resetTimerRestartsFromConfiguredDuration() {
+		config.timerSeconds = 100;
+		sm.turnOn();
+		clock.advanceSeconds(70);
+		sm.resetTimer();
+		assertEquals(100, sm.timerRemainingSeconds());
+		assertFalse(sm.isTimerPaused());
+		sm.turnOff();
+		clock.advanceSeconds(30);
+		sm.resetTimer();
+		assertTrue(sm.isTimerPaused(), "a reset while off stays paused");
+		sm.turnOn();
+		assertEquals(100, sm.timerRemainingSeconds());
+	}
+
+	@Test
+	void settingTimerWhileOffStoresItPaused() {
 		sm.setTimerSeconds(90);
 		assertEquals(90, config.timerSeconds);
-		assertFalse(sm.hasTimer());
+		assertTrue(sm.isTimerPaused());
+		sm.turnOn();
+		assertEquals(90, sm.timerRemainingSeconds());
 	}
 
 	// ---- post-resume cooldown ----

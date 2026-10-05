@@ -31,7 +31,8 @@ import java.util.function.Supplier;
  *       movement recovery attempt. Everything ACTIVE reacts to (restart, join, disconnect, death, timer end)
  *       still applies and cancels the recovery.</li>
  * </ul>
- * The timer only counts down in ACTIVE and RECOVERING; it is paused in every other state.
+ * The timer only counts down in ACTIVE and RECOVERING; it is paused in every other state. Turning the mod OFF keeps the
+ * remaining time (it resumes on the next turn on) unless the timer itself ended; {@link #resetTimer} starts it over.
  */
 public final class AfkStateMachine {
 	public enum State {
@@ -134,8 +135,16 @@ public final class AfkStateMachine {
 	public void turnOn() {
 		if (state != State.OFF) return;
 		cooldownActive = false;
-		timer.start(config.get().timerSeconds, true);
+		// A timer left paused by an earlier stop carries on from where it was; otherwise start a fresh one.
+		long configured = config.get().timerSeconds;
+		boolean keep = timer.hasTimer() && !timer.isExpired() && timer.durationSeconds() == configured;
+		if (!keep) timer.start(configured, true);
 		transition(State.ACTIVE, Reason.TOGGLED_ON);
+	}
+
+	/** Restarts the countdown from the configured duration. Stays paused unless the mod is ACTIVE or RECOVERING. */
+	public void resetTimer() {
+		timer.start(config.get().timerSeconds, !isActiveOrRecovering());
 	}
 
 	public void turnOff() {
@@ -145,7 +154,7 @@ public final class AfkStateMachine {
 	/** Sets a new timer (0 = none). While the mod is on, the countdown restarts from the new value. */
 	public void setTimerSeconds(long seconds) {
 		config.get().timerSeconds = Math.max(0, seconds);
-		if (state != State.OFF) timer.start(config.get().timerSeconds, !isActiveOrRecovering());
+		timer.start(config.get().timerSeconds, !isActiveOrRecovering());
 		timerListener.accept(config.get().timerSeconds);
 	}
 
@@ -466,7 +475,8 @@ public final class AfkStateMachine {
 		lastReason = reason;
 		boolean activeOrRecovering = to == State.ACTIVE || to == State.RECOVERING;
 		if (activeOrRecovering) timer.resume();
-		else if (to == State.OFF) timer.stop();
+		// Stopping the mod only pauses the timer (it resumes on the next turn on); a finished timer is discarded.
+		else if (to == State.OFF && reason == Reason.TIMER_END) timer.stop();
 		else timer.pause();
 		if (!activeOrRecovering) cooldownActive = false;
 		if (to == State.OFF) inRestart = false;

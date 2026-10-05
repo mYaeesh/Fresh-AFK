@@ -51,9 +51,9 @@ final class TimerTab extends RowTab {
 		rows.add(new TextRow(() -> {
 			AfkStateMachine m = AfkController.get().machine();
 			long saved = AfkModClient.savedConfig().timerSeconds;
-			if (m.isOn() && m.hasTimer()) {
-				return List.of(seg("Running: " + DurationParser.format(m.timerRemainingSeconds()) + " remaining"
-						+ (m.isTimerPaused() ? " (paused)" : ""), Ui.TEXT));
+			if (m.hasTimer()) {
+				return List.of(seg((m.isTimerPaused() ? "Paused: " : "Running: ")
+						+ DurationParser.format(m.timerRemainingSeconds()) + " remaining", Ui.TEXT));
 			}
 			return List.of(seg(saved > 0 ? "Set to " + DurationParser.format(saved) + (m.isOn() ? "" : " (starts when AFK turns ON)")
 					: "No timer", Ui.TEXT));
@@ -62,7 +62,8 @@ final class TimerTab extends RowTab {
 		rows.add(fields);
 		Button set = Button.builder(Component.literal("Set timer"), b -> setTimer()).bounds(0, 0, 100, Ui.ROW_H).build();
 		Button none = Button.builder(Component.literal("No timer"), b -> clearTimer()).bounds(0, 0, 100, Ui.ROW_H).build();
-		rows.add(ButtonsRow.of(List.of(set, none)));
+		Button reset = Button.builder(Component.literal("Reset timer"), b -> resetTimer()).bounds(0, 0, 100, Ui.ROW_H).build();
+		rows.add(ButtonsRow.of(List.of(set, none, reset)));
 		rows.add(new TextRow(() -> message.isEmpty() ? List.of() : List.of(seg(message, messageColor))));
 	}
 
@@ -79,6 +80,12 @@ final class TimerTab extends RowTab {
 		}
 		apply(total);
 		show("Timer set to " + DurationParser.format(total), Ui.GREEN);
+	}
+
+	/** Restarts the countdown from the configured duration (stays paused while AFK is off). */
+	private void resetTimer() {
+		AfkController.get().machine().resetTimer();
+		show(AfkModClient.savedConfig().timerSeconds > 0 ? "Timer reset" : "No timer to reset", Ui.GREEN);
 	}
 
 	private void clearTimer() {

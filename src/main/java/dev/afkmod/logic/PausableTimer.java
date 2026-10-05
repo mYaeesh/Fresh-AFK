@@ -61,6 +61,11 @@ public final class PausableTimer {
 		return started && durationNanos > 0;
 	}
 
+	/** The full duration the timer was started with, in whole seconds (0 when none). */
+	public long durationSeconds() {
+		return started ? TimeUnit.NANOSECONDS.toSeconds(durationNanos) : 0;
+	}
+
 	public boolean isPaused() {
 		return started && !running;
 	}
