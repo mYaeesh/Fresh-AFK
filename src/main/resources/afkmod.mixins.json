@@ -6,6 +6,7 @@
 		"ClientLevelMixin",
 		"ClientPacketListenerMixin",
 		"GuiAccessor",
+		"MinecraftMixin",
 		"MouseHandlerMixin"
 	],
 	"injectors": {

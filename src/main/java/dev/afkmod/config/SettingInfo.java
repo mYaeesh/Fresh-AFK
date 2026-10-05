@@ -324,6 +324,27 @@ public final class SettingInfo {
 						+ "spent in server restarts does not count. 0 means no timer.")
 				.unit("s").range(0, 100 * 3600).rangeText("0 s-100 h").note("none").add();
 
+		config("timerPresets", "Timer presets", Kind.TEXT,
+				"Named timer lengths shown as one-click buttons in the Timer tab. Add, rename, change or delete them there. "
+						+ "Names are at most " + TimerPreset.NAME_MAX + " characters.").add();
+
+		// Window and connection
+		config("keepRunningUnfocused", "Keep running when unfocused", Kind.TOGGLE,
+				"Stops Minecraft from pausing when you switch to another window (alt-tab) while the mod is ON, so it keeps "
+						+ "mining. Minecraft's own 'pause on lost focus' option is left as it is and applies again when the "
+						+ "mod is OFF.").add();
+		config("autoReconnect", "Auto reconnect", Kind.TOGGLE,
+				"If the connection is lost while the mod is ON (not a restart the server handles itself, not the timer "
+						+ "ending, not you leaving), try to join the same server again. Single-player and Realms are not "
+						+ "reconnected.").add();
+		config("reconnectAttempts", "Reconnect attempts", Kind.INTEGER,
+				"The most times the mod tries to rejoin after one connection loss. All attempts must fit inside the "
+						+ "Reconnect grace, because the mod switches off when the grace runs out.")
+				.range(1, 50).add();
+		config("reconnectDelaySeconds", "Reconnect delay", Kind.INTEGER,
+				"How long to wait after the connection is lost before the first attempt, and between attempts.")
+				.unit("s").range(1, 600).add();
+
 		// Debug and HUD
 		config("debugLogging", "Log all incoming messages", Kind.TOGGLE,
 				"Writes every incoming message to afkmod-messages.log so you can see the exact text your server sends. "

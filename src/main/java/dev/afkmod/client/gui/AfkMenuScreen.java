@@ -89,8 +89,8 @@ public final class AfkMenuScreen extends Screen {
 
 	@Override
 	protected void init() {
-		this.tabs = List.of(new DashboardTab(), new TimerTab(), new DetectionTab(), new RecoveryTab(),
-				new StatsTab(this), new DisplayTab(), new DebugTab(actions), new TestLabTab(actions));
+		this.tabs = List.of(new DashboardTab(), new TimerTab(this::rebuildWidgets), new DetectionTab(), new RecoveryTab(),
+				new StatsTab(this), new DisplayTab(), new DebugTab(actions, this::rebuildWidgets), new TestLabTab(actions));
 		TabNavigationBar bar = TabNavigationBar.builder(this.tabManager, this.width).addTabs(tabs.toArray(new Tab[0])).build();
 		this.tabBar = bar;
 		this.addRenderableWidget(bar);

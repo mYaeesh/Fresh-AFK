@@ -845,3 +845,35 @@ https://github.com/mYaeesh/Fresh-AFK with a GitHub Actions build.
    file gone.
 5. With the mod ON, open chat, press shift once in-world after closing (crouch off): right click turns off, crouch back
    on, then right click on again.
+
+## Session 2026-10-05 (2): persistent timer, presets, auto reconnect, alt-tab, GUI polish
+
+### Done
+- **Timer persists across stop/resume.** OFF pauses the timer instead of discarding it; ON resumes it. A timer that ended
+  (`TIMER_END`) is discarded, and a stored timer whose length differs from the configured one is not resumed.
+  `AfkStateMachine.resetTimer()` and a **Reset timer** button. `setTimerSeconds` now also restarts the stored timer while OFF.
+- **Test Lab snapshot fix:** `TestSnapshot` now carries the timer's full duration (`PausableTimer.restore`); without it a
+  restored timer would not have been resumed after a later stop.
+- **Timer presets** (`config.timerPresets`, `TimerPreset`): editable rows in the Timer tab (name, length such as `2h30m`,
+  Use, X) and Add preset.
+- **Auto reconnect** (`ReconnectPlanner`, `AfkController.tryReconnect`): while RECONNECTING, rejoin the last multiplayer
+  server, `reconnectAttempts` times, `reconnectDelaySeconds` apart. Single-player, Realms and Test Lab runs are skipped.
+- **Alt-tab** (`MinecraftMixin`): cancels `Minecraft.pauseIfInactive` while the mod is ON and `keepRunningUnfocused` is set.
+- **GUI polish:** per-state colours (`HudText.dotColor` / `labelColor`: orange reconnecting, aqua resuming), a live HUD preview
+  and colour legend in the Display tab (`AfkHud.drawBox`, shared with the real HUD), the Detection tab grouped under
+  headings, the paused timer shown on the Dashboard and Timer tab while OFF. The Recovery tab already existed.
+- **Settings export/import** (Debug tab) to `config/afkmod-export.json`.
+- README: new sections and tab descriptions; the settings table is regenerated from `SettingInfo`.
+
+### Not verifiable without launching Minecraft
+- `MinecraftMixin` targets the private `Minecraft.pauseIfInactive` (present in the 26.1.2 sources); Mixin only fails at
+  runtime if the method is missing.
+- Auto reconnect against a real server (it calls `ConnectScreen.startConnecting`, the same path as the server list).
+- How the Timer, Detection and Display tabs look and scroll at different GUI scales.
+- After an alt-tab: whether held keys and the mouse behave (the mouse-grab flag is kept; only the pause is skipped).
+
+### Decisions made where the request was silent
+- Auto reconnect and keep-running-unfocused are **on by default**; both can be turned off in the Detection tab.
+- Default presets: 30 min, 1 hr, 4 hr, 8 hr (short names, because the settings registry shows the default list as one
+  tooltip line).
+- Death, grace expiry and other stops also keep the remaining time (only the timer ending discards it).

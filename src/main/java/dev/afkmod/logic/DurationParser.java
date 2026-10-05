@@ -59,6 +59,17 @@ public final class DurationParser {
 		return h > 0 ? String.format(Locale.ROOT, "%d:%02d:%02d", h, m, sec) : String.format(Locale.ROOT, "%d:%02d", m, sec);
 	}
 
+	/** Formats as {@code 1h 30m 5s} (zero parts left out, {@code 0s} for zero). {@link #parse} reads it back. */
+	public static String formatUnits(long totalSeconds) {
+		long s = Math.max(0, totalSeconds);
+		long h = s / 3600, m = (s % 3600) / 60, sec = s % 60;
+		StringBuilder sb = new StringBuilder();
+		if (h > 0) sb.append(h).append('h');
+		if (m > 0) sb.append(sb.length() > 0 ? " " : "").append(m).append('m');
+		if (sec > 0 || sb.length() == 0) sb.append(sb.length() > 0 ? " " : "").append(sec).append('s');
+		return sb.toString();
+	}
+
 	private static long parseClock(String s) {
 		Matcher m = CLOCK_FORM.matcher(s);
 		if (!m.matches()) throw new IllegalStateException("CLOCK_FORM already matched");

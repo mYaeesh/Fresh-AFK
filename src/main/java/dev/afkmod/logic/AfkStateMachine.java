@@ -421,12 +421,13 @@ public final class AfkStateMachine {
 
 	/** What a Test Lab scenario may change and must put back afterwards. */
 	public record TestSnapshot(int restartCount, boolean cooldownActive, long resumedAt, boolean hasTimer,
-			long timerRemainingNanos) {
+			long timerDurationNanos, long timerRemainingNanos) {
 	}
 
 	/** Captures the restart count, the post-resume cooldown and the timer before a Test Lab scenario. */
 	public TestSnapshot captureForTest() {
-		return new TestSnapshot(restartCount, cooldownActive, resumedAt, timer.hasTimer(), timer.remainingNanos());
+		return new TestSnapshot(restartCount, cooldownActive, resumedAt, timer.hasTimer(), timer.durationNanos(),
+				timer.remainingNanos());
 	}
 
 	/**
@@ -439,7 +440,7 @@ public final class AfkStateMachine {
 		resumedAt = snapshot.resumedAt();
 		if (state == State.OFF) return;
 		boolean paused = !isActiveOrRecovering();
-		if (snapshot.hasTimer()) timer.startNanos(Math.max(1, snapshot.timerRemainingNanos()), paused);
+		if (snapshot.hasTimer()) timer.restore(snapshot.timerDurationNanos(), Math.max(1, snapshot.timerRemainingNanos()), paused);
 		else timer.start(0, paused);
 	}
 

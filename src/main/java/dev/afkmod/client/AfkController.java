@@ -14,6 +14,7 @@ import dev.afkmod.logic.DisconnectTracker;
 import dev.afkmod.logic.HoldModeOverride;
 import dev.afkmod.logic.KeywordMatcher;
 import dev.afkmod.logic.MessageSource;
+import dev.afkmod.logic.ReconnectPlanner;
 import dev.afkmod.mixin.GuiAccessor;
 import dev.afkmod.stats.AfkStats;
 import dev.afkmod.stats.StatsRecorder;
@@ -33,10 +34,13 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.PauseScreen;
+import net.minecraft.client.gui.screens.ConnectScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -84,6 +88,10 @@ public final class AfkController {
 	private long checkCount;
 	private boolean timerDisconnectPending;
 	private boolean recoveryDisconnectPending;
+	/** Decides when to rejoin after a connection loss while the mod is on. */
+	private final ReconnectPlanner reconnect = new ReconnectPlanner();
+	/** The multiplayer server of the last join, or null (single player, Realms, never joined). Where auto reconnect goes. */
+	private ServerData lastServer;
 	/** Last known state of the restart queue text, only for logging when it appears and disappears. */
 	private boolean queueTextShown;
 	/** Cleared if the action bar state can't be read; the time of the last queue message is used instead. */
@@ -246,6 +254,8 @@ public final class AfkController {
 		messageLog.event("Joined world while " + machine.state());
 		statsRecorder.onJoin(machine.state());
 		disconnects.reset();
+		ServerData server = Minecraft.getInstance().getCurrentServer();
+		lastServer = server != null && !server.isRealm() ? server : null;
 		recovery.onJoin();
 		machine.onJoin();
 		ticksSinceCheck = 0;
@@ -382,6 +392,7 @@ public final class AfkController {
 		boolean queueVisible = mc.level != null && isQueueTextVisible(mc);
 		if (mc.level != null) setQueueTextShown(queueVisible);
 		machine.tick(worldReady, queueVisible);
+		if (machine.state() == State.RECONNECTING) tryReconnect(mc, config);
 		recovery.onCheck(mc, config, worldReady);
 		stats.maybeAutoSave();
 
@@ -443,6 +454,8 @@ public final class AfkController {
 		Minecraft mc = Minecraft.getInstance();
 		// Clears the stuck window; leaving RECOVERING early cancels the attempt (releases W and jump).
 		recovery.onTransition(from, to);
+		if (to == State.RECONNECTING) reconnect.begin(System.nanoTime());
+		else if (from == State.RECONNECTING) reconnect.reset();
 		statsRecorder.onTransition(from, to, reason);
 		testLab.onTransition(from, to, reason);
 
@@ -468,6 +481,34 @@ public final class AfkController {
 			// Disconnect after the state machine call returns, never from inside it.
 			timerDisconnectPending = true;
 		}
+	}
+
+	// ---- alt-tab and auto reconnect ----
+
+	/**
+	 * True when Minecraft should not pause because its window lost focus ({@code Minecraft.pauseIfInactive}, see
+	 * {@code MinecraftMixin}): the mod is on and the setting allows it. Otherwise vanilla's own option decides.
+	 */
+	public boolean keepRunningWhileUnfocused() {
+		return machine.isOn() && AfkModClient.config().keepRunningUnfocused;
+	}
+
+	/**
+	 * While RECONNECTING (connection lost, no restart in progress): rejoin the same multiplayer server, at most
+	 * {@code reconnectAttempts} times, each {@code reconnectDelaySeconds} apart. The grace period still applies, so the
+	 * mod turns off if none of them worked in time. Never during a Test Lab run (its disconnects are simulated).
+	 */
+	private void tryReconnect(Minecraft mc, AfkConfig config) {
+		if (testMode || disconnectDryRun || lastServer == null) return;
+		boolean canConnect = mc.level == null && !(mc.screen instanceof ConnectScreen);
+		if (!reconnect.shouldAttempt(System.nanoTime(), config.autoReconnect, config.reconnectAttempts,
+				config.reconnectDelaySeconds, canConnect)) {
+			return;
+		}
+		messageLog.event("Auto reconnect: attempt " + reconnect.attempts() + " of " + config.reconnectAttempts);
+		AfkModClient.LOGGER.info("Auto reconnect: attempt {} of {}", reconnect.attempts(), config.reconnectAttempts);
+		ConnectScreen.startConnecting(new JoinMultiplayerScreen(new TitleScreen()), mc,
+				ServerAddress.parseString(lastServer.ip), lastServer, false, null);
 	}
 
 	// ---- pause menu button ----

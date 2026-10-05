@@ -48,6 +48,16 @@ public final class AfkConfig {
 	public boolean releaseCrouchOnRestart = false;
 	/** 0 = no timer. */
 	public long timerSeconds = 0;
+	/** Named timer lengths shown as one-click buttons in the Timer tab. */
+	public List<TimerPreset> timerPresets = TimerPreset.defaults();
+	/** Keep the game running (not paused) while its window is in the background, so the mod works after alt-tab. */
+	public boolean keepRunningUnfocused = true;
+	/** After a connection loss while AFK is on, try to join the same server again. */
+	public boolean autoReconnect = true;
+	/** Most join attempts per connection loss. */
+	public int reconnectAttempts = 5;
+	/** Wait this long after a connection loss, and between attempts. */
+	public int reconnectDelaySeconds = 10;
 	public boolean debugLogging = false;
 	public boolean hudEnabled = true;
 	public boolean hudDetailed = false;
@@ -102,6 +112,7 @@ public final class AfkConfig {
 		postResumeCooldownSeconds = Math.max(0, postResumeCooldownSeconds);
 		reconnectGraceSeconds = Math.max(0, reconnectGraceSeconds);
 		timerSeconds = Math.clamp(timerSeconds, 0, DurationParser.MAX_SECONDS);
+		timerPresets = TimerPreset.clean(timerPresets);
 		if (hudCorner == null) hudCorner = defaults.hudCorner;
 		if (Float.isNaN(hudScale)) hudScale = defaults.hudScale;
 		hudScale = Math.clamp(hudScale, HUD_SCALE_MIN, HUD_SCALE_MAX);
@@ -120,6 +131,8 @@ public final class AfkConfig {
 		postResumeCooldownSeconds = SettingInfo.clampInt("postResumeCooldownSeconds", postResumeCooldownSeconds);
 		reconnectGraceSeconds = SettingInfo.clampInt("reconnectGraceSeconds", reconnectGraceSeconds);
 		stuckWindowSeconds = SettingInfo.clampInt("stuckWindowSeconds", stuckWindowSeconds);
+		reconnectAttempts = SettingInfo.clampInt("reconnectAttempts", reconnectAttempts);
+		reconnectDelaySeconds = SettingInfo.clampInt("reconnectDelaySeconds", reconnectDelaySeconds);
 		return this;
 	}
 
@@ -153,6 +166,11 @@ public final class AfkConfig {
 		reconnectGraceSeconds = other.reconnectGraceSeconds;
 		releaseCrouchOnRestart = other.releaseCrouchOnRestart;
 		timerSeconds = other.timerSeconds;
+		timerPresets = TimerPreset.copyOf(other.timerPresets);
+		keepRunningUnfocused = other.keepRunningUnfocused;
+		autoReconnect = other.autoReconnect;
+		reconnectAttempts = other.reconnectAttempts;
+		reconnectDelaySeconds = other.reconnectDelaySeconds;
 		debugLogging = other.debugLogging;
 		hudEnabled = other.hudEnabled;
 		hudDetailed = other.hudDetailed;

@@ -81,9 +81,6 @@ public final class AfkHud {
 			lines.set(0, first);
 		}
 
-		int width = 0;
-		for (List<Segment> line : lines) width = Math.max(width, lineWidth(font, line));
-		int height = lines.size() * LINE_HEIGHT - 1;
 		float scale = Math.clamp(config.hudScale, AfkConfig.HUD_SCALE_MIN, AfkConfig.HUD_SCALE_MAX);
 
 		// The F3 screen fills the top corners, so draw at the bottom instead while it's open.
@@ -95,8 +92,8 @@ public final class AfkHud {
 				default -> corner;
 			};
 		}
-		float boxW = (width + PAD * 2) * scale;
-		float boxH = (height + PAD * 2) * scale;
+		float boxW = boxWidth(font, lines, scale);
+		float boxH = boxHeight(lines, scale);
 		float x = switch (corner) {
 			case TOP_LEFT, BOTTOM_LEFT -> MARGIN;
 			case TOP_RIGHT, BOTTOM_RIGHT -> graphics.guiWidth() - MARGIN - boxW;
@@ -106,10 +103,29 @@ public final class AfkHud {
 			case BOTTOM_LEFT, BOTTOM_RIGHT -> graphics.guiHeight() - MARGIN - boxH;
 		};
 
+		drawBox(graphics, font, lines, x, y, scale);
+	}
+
+	/** Width of the HUD box for {@code lines} at {@code scale}, in GUI pixels. */
+	public static float boxWidth(Font font, List<List<Segment>> lines, float scale) {
+		int width = 0;
+		for (List<Segment> line : lines) width = Math.max(width, lineWidth(font, line));
+		return (width + PAD * 2) * scale;
+	}
+
+	/** Height of the HUD box for {@code lines} at {@code scale}, in GUI pixels. */
+	public static float boxHeight(List<List<Segment>> lines, float scale) {
+		return (lines.size() * LINE_HEIGHT - 1 + PAD * 2) * scale;
+	}
+
+	/** Draws the HUD text on its dark backing with the top-left corner at ({@code x}, {@code y}). Also used by the settings preview. */
+	public static void drawBox(GuiGraphicsExtractor graphics, Font font, List<List<Segment>> lines, float x, float y, float scale) {
+		int width = Math.round(boxWidth(font, lines, 1f));
+		int height = Math.round(boxHeight(lines, 1f));
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(scale, scale);
-		graphics.fill(0, 0, width + PAD * 2, height + PAD * 2, BACKING);
+		graphics.fill(0, 0, width, height, BACKING);
 		int ty = PAD;
 		for (List<Segment> line : lines) {
 			int tx = PAD;

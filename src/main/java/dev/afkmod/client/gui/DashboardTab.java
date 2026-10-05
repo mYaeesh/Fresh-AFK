@@ -72,7 +72,7 @@ final class DashboardTab extends RowTab {
 			State state = machine().state();
 			List<Seg> line = new ArrayList<>();
 			line.add(seg("● ", HudText.dotColor(state)));
-			line.add(seg(HudText.label(state), Ui.WHITE));
+			line.add(seg(HudText.label(state), state == State.OFF ? Ui.WHITE : HudText.labelColor(state)));
 			if (state == State.OFF && machine().lastReason() != null) {
 				line.add(seg("  (last: " + machine().lastReason().name().toLowerCase(Locale.ROOT).replace('_', ' ') + ")", Ui.GREY));
 			}
@@ -162,7 +162,7 @@ final class DashboardTab extends RowTab {
 	private static List<Seg> timerLine() {
 		AfkStateMachine m = machine();
 		AfkConfig config = AfkModClient.config();
-		if (!m.isOn()) {
+		if (!m.isOn() && !m.hasTimer()) {
 			return List.of(seg(config.timerSeconds > 0
 					? "Timer: " + DurationParser.format(config.timerSeconds) + " (starts when AFK turns ON)" : "Timer: none", Ui.TEXT));
 		}
@@ -173,7 +173,7 @@ final class DashboardTab extends RowTab {
 
 	private static double timerFraction() {
 		AfkStateMachine m = machine();
-		if (!m.isOn() || !m.hasTimer()) return 0;
+		if (!m.hasTimer()) return 0;
 		long total = AfkModClient.config().timerSeconds;
 		long remaining = m.timerRemainingSeconds();
 		return total <= 0 ? 1.0 : (double) remaining / total;
@@ -181,7 +181,7 @@ final class DashboardTab extends RowTab {
 
 	private static String timerBarLabel() {
 		AfkStateMachine m = machine();
-		if (!m.isOn() || !m.hasTimer()) return "no timer";
+		if (!m.hasTimer()) return "no timer";
 		return DurationParser.format(m.timerRemainingSeconds()) + (m.isTimerPaused() ? " paused" : "");
 	}
 

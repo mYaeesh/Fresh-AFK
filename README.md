@@ -115,8 +115,22 @@ restart are not counted.
 
 A disconnect while ACTIVE with **no** restart message is treated as a possible relog: the mod waits up to
 `reconnectGraceSeconds` (default 120) for you to rejoin, then turns off. A relog that arrives with no disconnect at
-all is handled the same way as a rejoin (settle delay, then the cooldown). The mod does not auto-reconnect after a
-real disconnect.
+all is handled the same way as a rejoin (settle delay, then the cooldown).
+
+### Auto reconnect
+
+While waiting in that grace period, the mod tries to **join the same multiplayer server again**: the first attempt
+`reconnectDelaySeconds` (10 s) after the connection was lost, then every 10 s, at most `reconnectAttempts` (5) times.
+The grace period still applies, so the attempts must fit inside it or the mod turns off. It does nothing for a restart
+(the server reconnects you itself), for the timer ending, or when you leave on purpose, and it never reconnects
+single-player or Realms. Turn it off with **Auto reconnect** in the Detection tab.
+
+### Alt-tab
+
+Normally Minecraft opens the pause menu when its window loses focus ("pause on lost focus"), which stops the mod
+from working. While the mod is ON, that pause is skipped (setting **Keep running when unfocused**, on by default), so
+you can switch to another window and it keeps going. Your own Minecraft option is not changed: with the mod OFF the
+game pauses as usual. A window that is in the background may render at a lower frame rate; that does not affect the mod.
 
 ### Timer
 
@@ -124,6 +138,14 @@ The countdown starts when the mod is turned ON. Time spent during a restart (mes
 delay) and the reconnect grace period **does not count**: the countdown is paused. When it ends the mod releases everything, turns
 itself fully OFF, and disconnects you to the **multiplayer server list**. It only starts again when you press the
 toggle key.
+
+Turning the mod OFF by hand (keybind, GUI, death, disconnect) only **pauses** the timer: the remaining time is kept and
+the countdown carries on from there the next time you turn the mod ON. A timer that has run out starts over from its full
+length. **Reset timer** (Timer tab) starts it over from the configured length whenever you like (paused while the mod is OFF).
+
+**Presets** are named lengths (defaults `30 min`, `1 hr`, `4 hr`, `8 hr`). In the Timer tab you can rename or change
+each one in place (length as `2h30m`, `45m` or `1:30:00`), press **Use** to apply it, **X** to delete it, or type a length
+in the fields, give it a name and press **Add preset**. They are saved in `config/afkmod.json` as `timerPresets`.
 
 ### Movement recovery
 
@@ -194,12 +216,12 @@ the scenario's description and what a PASS means.
 | Tab | What is on it |
 |---|---|
 | **Dashboard** | Live and read-only apart from the big **ON/OFF** button: state with a coloured dot, timer remaining with a progress bar, restart count and the current restart's elapsed time, crouch / left click / right click indicators, movement (distance moved in the current window, last recovery result, last yaw snap), the session summary and the last 8 events with timestamps. While a Test Lab scenario runs, a `TEST RUNNING: <name>` banner with an **Abort** button. |
-| **Timer** | Hour, minute and second fields, **Set timer** and **No timer**. Invalid input shows in red. Changing the timer while ON restarts the countdown. |
-| **Detection** | Restart, ignore and queue keywords (comma-separated), the post-resume cooldown, queue-gone time, no-reconnect fallback, max restart wait, settle delay, reconnect grace, and "release crouch on restart". |
+| **Timer** | Hour, minute and second fields, **Set timer**, **No timer** and **Reset timer**, then the **Presets** list (rename, change, **Use**, delete, or **Add preset**). Invalid input shows in red. Changing the timer restarts the countdown; it also shows while paused (AFK off). |
+| **Detection** | Grouped as Restart keywords (restart, ignore and queue, comma-separated), Restart timing (post-resume cooldown, queue-gone time, no-reconnect fallback, max restart wait, settle delay, "release crouch on restart"), Connection (reconnect grace, **Auto reconnect**, attempts, delay) and Window (**Keep running when unfocused**). |
 | **Recovery** | Stuck detection and the recovery walk settings, plus the last yaw turn and the last recovery result. |
 | **Stats** | The current session, lifetime totals, the last 20 sessions (hover one for details) and **Reset lifetime stats** (asks first). |
-| **Display** | HUD on/off, detailed mode, corner and scale. |
-| **Debug** | **Log all incoming messages**, **Open log folder** and **Copy debug report**. |
+| **Display** | A live **HUD preview** (drawn by the same code as the real HUD), a legend of the state colours (green mining, yellow recovering, red restarting, orange reconnecting, aqua resuming, grey off), then HUD on/off, detailed mode, corner and scale. |
+| **Debug** | **Log all incoming messages**, **Open log folder**, **Copy debug report**, and **Export settings** / **Import settings** (to and from `config/afkmod-export.json`; an import replaces every setting, out-of-range values are corrected, and Cancel does not undo it). |
 | **Test Lab** | The message tester with presets, the options, every scenario grouped A to I with a **Run** button (disabled, with the reason in a tooltip, when the mod is OFF and the scenario needs it ON), the self-test, Abort and the results list. Scenarios that move the player carry a `(!)` tag; those that can disconnect ask for confirmation. |
 
 Validation: numbers must be inside their range and the restart and queue keyword lists cannot be empty. A bad value
@@ -326,6 +348,11 @@ right for nearly everyone.)
 | Max restart wait | `maxRestartWaitMinutes` | 15 min | 1-600 min | The longest the mod will wait for a restart to finish. After that it releases everything and switches off. |
 | Release crouch on restart | `releaseCrouchOnRestart` | off |  | Also stop crouching while the server restarts. By default only left and right click are released. |
 | Timer | `timerSeconds` | 0 s (none) | 0 s-100 h | The AFK countdown. When it reaches zero the mod stops everything and disconnects to the server list. Time spent in server restarts does not count. 0 means no timer. |
+| Timer presets | `timerPresets` | 30 min, 1 hr, 4 hr, 8 hr |  | Named timer lengths shown as one-click buttons in the Timer tab. Add, rename, change or delete them there. Names are at most 24 characters. |
+| Keep running when unfocused | `keepRunningUnfocused` | on |  | Stops Minecraft from pausing when you switch to another window (alt-tab) while the mod is ON, so it keeps mining. Minecraft's own 'pause on lost focus' option is left as it is and applies again when the mod is OFF. |
+| Auto reconnect | `autoReconnect` | on |  | If the connection is lost while the mod is ON (not a restart the server handles itself, not the timer ending, not you leaving), try to join the same server again. Single-player and Realms are not reconnected. |
+| Reconnect attempts | `reconnectAttempts` | 5 | 1-50 | The most times the mod tries to rejoin after one connection loss. All attempts must fit inside the Reconnect grace, because the mod switches off when the grace runs out. |
+| Reconnect delay | `reconnectDelaySeconds` | 10 s | 1-600 s | How long to wait after the connection is lost before the first attempt, and between attempts. |
 | Log all incoming messages | `debugLogging` | off |  | Writes every incoming message to afkmod-messages.log so you can see the exact text your server sends. Turn it on when setting up keywords. |
 | Show HUD | `hudEnabled` | on |  | Show or hide the on-screen status line. |
 | Detailed HUD | `hudDetailed` | off |  | Show 2-3 lines of status instead of one compact line. |

@@ -35,6 +35,19 @@ public final class PausableTimer {
 		durationNanos = Math.max(0, nanos);
 	}
 
+	/** Puts back a timer of {@code durationNanos} that has {@code remainingNanos} left (a snapshot taken earlier). */
+	public void restore(long durationNanos, long remainingNanos, boolean paused) {
+		long duration = Math.max(0, durationNanos);
+		start(0, paused);
+		this.durationNanos = duration;
+		elapsedBeforePauseNanos = Math.max(0, duration - Math.max(0, remainingNanos));
+	}
+
+	/** The full duration the timer was started with, in nanoseconds (0 when none). */
+	public long durationNanos() {
+		return started ? durationNanos : 0;
+	}
+
 	public void stop() {
 		started = false;
 		running = false;

@@ -15,6 +15,8 @@ public final class HudText {
 	public static final int GREY = 0xFFAAAAAA;
 	public static final int YELLOW = 0xFFFFFF55;
 	public static final int WHITE = 0xFFFFFFFF;
+	public static final int ORANGE = 0xFFFFAA33;
+	public static final int AQUA = 0xFF55FFFF;
 
 	public record Segment(String text, int color) {
 	}
@@ -27,13 +29,21 @@ public final class HudText {
 	private HudText() {
 	}
 
+	/** One colour per state: green working, yellow recovering, red restarting, orange reconnecting, aqua resuming, grey off. */
 	public static int dotColor(State state) {
 		return switch (state) {
 			case ACTIVE -> GREEN;
 			case RESTARTING -> RED;
 			case RECOVERING -> YELLOW;
-			default -> GREY;
+			case RECONNECTING -> ORANGE;
+			case SETTLING -> AQUA;
+			case OFF -> GREY;
 		};
+	}
+
+	/** The state's text colour: white while mining normally, otherwise the state's own colour. */
+	public static int labelColor(State state) {
+		return state == State.ACTIVE ? WHITE : dotColor(state);
 	}
 
 	public static String label(State state) {
@@ -61,7 +71,7 @@ public final class HudText {
 
 		List<Segment> first = new ArrayList<>();
 		first.add(new Segment("● ", dotColor(s.state())));
-		first.add(new Segment(label(s.state()), base));
+		first.add(new Segment(label(s.state()), labelColor(s.state())));
 
 		if (detailed) {
 			if (s.state() != State.RESTARTING) first.add(new Segment(" | " + timer(s), base));

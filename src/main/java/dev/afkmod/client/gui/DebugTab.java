@@ -1,6 +1,7 @@
 package dev.afkmod.client.gui;
 
 import dev.afkmod.AfkModClient;
+import dev.afkmod.client.AfkController;
 import dev.afkmod.client.MessageLog;
 import dev.afkmod.client.gui.Rows.ButtonsRow;
 import dev.afkmod.client.gui.Rows.HeaderRow;
@@ -25,8 +26,14 @@ import static dev.afkmod.client.gui.Rows.seg;
 /** Message logging, the log folder, and the debug report (the Test Lab's I1, so there is one implementation). */
 final class DebugTab extends RowTab {
 
-	DebugTab(TestLabActions actions) {
+	/** The file the settings are exported to and imported from, next to the config file. */
+	static final String EXPORT_FILE = "afkmod-export.json";
+
+	private final Runnable rebuild;
+
+	DebugTab(TestLabActions actions, Runnable rebuild) {
 		super("Debug", "Debug");
+		this.rebuild = rebuild;
 		AfkConfig config = SettingRows.config();
 		rows.add(new HeaderRow("Debug"));
 		rows.add(new ToggleRow(font, "debugLogging", config.debugLogging, v -> config.debugLogging = v));
@@ -38,6 +45,15 @@ final class DebugTab extends RowTab {
 				.tooltip(Tooltip.create(Component.literal("Copies the debug report to the clipboard and saves " + TestLab.REPORT_FILE)))
 				.bounds(0, 0, 100, Ui.ROW_H).build();
 		rows.add(ButtonsRow.of(List.of(openFolder, report)));
+		Button export = Button.builder(Component.literal("Export settings"), b -> exportSettings())
+				.tooltip(Tooltip.create(Component.literal("Saves all settings (and timer presets) to " + EXPORT_FILE
+						+ " in the config folder, to copy to another computer")))
+				.bounds(0, 0, 100, Ui.ROW_H).build();
+		Button importButton = Button.builder(Component.literal("Import settings"), b -> importSettings())
+				.tooltip(Tooltip.create(Component.literal("Replaces all settings with the ones in " + EXPORT_FILE
+						+ ". Values out of range are corrected. Cancel does not undo it.")))
+				.bounds(0, 0, 100, Ui.ROW_H).build();
+		rows.add(ButtonsRow.of(List.of(export, importButton)));
 		rows.add(new TextRow(DebugTab::reportStatus));
 		rows.add(TextRow.of("Log file: " + MessageLog.file().getFileName() + " (in the config folder)", Ui.GREY));
 	}
@@ -50,6 +66,40 @@ final class DebugTab extends RowTab {
 		}
 		String status = TestLabActions.status();
 		return status.isEmpty() ? List.of() : List.of(seg(status, TestLabActions.statusColor()));
+	}
+
+	private static Path exportFile() {
+		return AfkModClient.configFile().resolveSibling(EXPORT_FILE);
+	}
+
+	private static void exportSettings() {
+		try {
+			AfkModClient.savedConfig().save(exportFile());
+			TestLabActions.setStatus("Settings exported to " + EXPORT_FILE, Ui.GREEN);
+		} catch (IOException e) {
+			AfkModClient.LOGGER.error("Could not export the settings to {}", exportFile(), e);
+			TestLabActions.setStatus("Could not export: " + e.getMessage(), Ui.ERROR);
+		}
+	}
+
+	/** Replaces the settings with the exported file's (clamped like any loaded config) and redraws the screen. */
+	private void importSettings() {
+		Path file = exportFile();
+		if (Files.notExists(file)) {
+			TestLabActions.setStatus(EXPORT_FILE + " not found in the config folder", Ui.ERROR);
+			return;
+		}
+		try {
+			AfkConfig imported = AfkConfig.fromJson(Files.readString(file, java.nio.charset.StandardCharsets.UTF_8));
+			AfkModClient.savedConfig().copyFrom(imported);
+			// The timer length is part of the settings: put the countdown back to the imported length.
+			AfkController.get().machine().setTimerSeconds(imported.timerSeconds);
+			TestLabActions.setStatus("Settings imported from " + EXPORT_FILE, Ui.GREEN);
+			rebuild.run();
+		} catch (IOException | com.google.gson.JsonParseException e) {
+			AfkModClient.LOGGER.error("Could not import the settings from {}", file, e);
+			TestLabActions.setStatus("Could not import: " + e.getMessage(), Ui.ERROR);
+		}
 	}
 
 	private static void openLogFolder() {

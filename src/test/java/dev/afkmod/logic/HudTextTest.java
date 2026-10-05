@@ -60,7 +60,7 @@ class HudTextTest {
 	@Test
 	void waitingStatesAreGreyAndTimerShowsPaused() {
 		var line = HudText.lines(snap(State.SETTLING, true, true, 90, 1, true, false, false), false).get(0);
-		assertEquals(HudText.GREY, line.get(0).color());
+		assertEquals(HudText.AQUA, line.get(0).color());
 		assertEquals("● Resuming | 1:30 (paused) | C L R | ↻1", plain(line));
 	}
 

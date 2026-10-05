@@ -2,11 +2,14 @@ package dev.afkmod.client.gui;
 
 import dev.afkmod.AfkModClient;
 import dev.afkmod.client.AfkController;
+import dev.afkmod.client.gui.PresetRows.AddPresetRow;
+import dev.afkmod.client.gui.PresetRows.PresetRow;
 import dev.afkmod.client.gui.Rows.ButtonsRow;
 import dev.afkmod.client.gui.Rows.HeaderRow;
 import dev.afkmod.client.gui.Rows.TextRow;
 import dev.afkmod.client.gui.SettingRows.SettingRow;
 import dev.afkmod.config.AfkConfig;
+import dev.afkmod.config.TimerPreset;
 import dev.afkmod.gui.FieldValidator;
 import dev.afkmod.logic.AfkStateMachine;
 import dev.afkmod.logic.DurationParser;
@@ -32,6 +35,8 @@ final class TimerTab extends RowTab {
 	private static String minutes = "";
 	private static String seconds = "";
 	private static String message = "";
+	/** The name typed for a new preset, kept like the fields. */
+	private static String presetName = "";
 	private static int messageColor = Ui.GREEN;
 
 	/** Called when the settings screen is opened fresh: start from the current timer. */
@@ -45,8 +50,12 @@ final class TimerTab extends RowTab {
 
 	private final TimerFieldsRow fields;
 
-	TimerTab() {
+	/** Rebuilds the settings screen, so the preset list is redrawn after one is added or deleted. */
+	private final Runnable rebuild;
+
+	TimerTab(Runnable rebuild) {
 		super("Timer", "Timer");
+		this.rebuild = rebuild;
 		rows.add(new HeaderRow("Timer"));
 		rows.add(new TextRow(() -> {
 			AfkStateMachine m = AfkController.get().machine();
@@ -65,6 +74,53 @@ final class TimerTab extends RowTab {
 		Button reset = Button.builder(Component.literal("Reset timer"), b -> resetTimer()).bounds(0, 0, 100, Ui.ROW_H).build();
 		rows.add(ButtonsRow.of(List.of(set, none, reset)));
 		rows.add(new TextRow(() -> message.isEmpty() ? List.of() : List.of(seg(message, messageColor))));
+
+		rows.add(new HeaderRow("Presets"));
+		List<TimerPreset> presets = AfkModClient.savedConfig().timerPresets;
+		if (presets.isEmpty()) rows.add(TextRow.of("No presets yet. Type a length above, name it below and press Add preset.", Ui.GREY));
+		for (TimerPreset preset : List.copyOf(presets)) {
+			rows.add(new PresetRow(font, preset, () -> usePreset(preset), () -> deletePreset(preset)));
+		}
+		rows.add(new AddPresetRow(font, () -> presetName, t -> presetName = t, this::addPreset));
+	}
+
+	/** Puts the preset's length in the fields and applies it, like typing it and pressing Set timer. */
+	private void usePreset(TimerPreset preset) {
+		long total = preset.seconds;
+		hours = total >= 3600 ? Long.toString(total / 3600) : "";
+		minutes = total % 3600 >= 60 ? Long.toString(total % 3600 / 60) : "";
+		seconds = total % 60 > 0 ? Long.toString(total % 60) : "";
+		fields.setTexts(hours, minutes, seconds);
+		apply(total);
+		show("Timer set to " + DurationParser.format(total) + " (" + preset.name + ")", Ui.GREEN);
+	}
+
+	private void deletePreset(TimerPreset preset) {
+		AfkModClient.savedConfig().timerPresets.remove(preset);
+		rebuild.run();
+	}
+
+	/** Adds a preset with the typed name and the length in the hour/minute/second fields. */
+	private void addPreset(String name) {
+		String problem = fields.problem();
+		if (problem != null) {
+			show(problem, Ui.ERROR);
+			return;
+		}
+		long total = DurationParser.fromFields(hours, minutes, seconds);
+		if (total <= 0) {
+			show("Type a length above 0 in the fields first", Ui.ERROR);
+			return;
+		}
+		String trimmed = name.trim();
+		if (trimmed.isEmpty()) {
+			show("Give the preset a name", Ui.ERROR);
+			return;
+		}
+		AfkModClient.savedConfig().timerPresets.add(new TimerPreset(trimmed, total));
+		presetName = "";
+		show("Preset \"" + trimmed + "\" added (" + DurationParser.format(total) + ")", Ui.GREEN);
+		rebuild.run();
 	}
 
 	private void setTimer() {
